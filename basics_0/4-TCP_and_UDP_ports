@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
-# Listen for incoming connections
-netstat -an -p tcp
+# Displays listening ports with the associated PID and program name
+sudo ss -tulnpx | grep LISTEN
