@@ -1,3 +1,34 @@
 #!/usr/bin/env bash
-# listening ports
-netstat -1
+# Displays listening TCP and UDP ports with the associated PID and program name
+
+# List listening TCP ports
+echo "Active Internet connections (only servers)"
+echo "Proto Local Address           Foreign Address         State       PID/Program name"
+
+# For TCP connections
+awk '$1 == "tcp" && $4 ~ /:([0-9]+)$/ && $6 == "0A" {
+    split($4, local, ":")
+    port = strtonum("0x" local[2])
+    cmdline = "/proc/" $9 "/cmdline"
+    pid = $9
+    if (getline prog < cmdline) {
+        gsub(/\x0/, " ", prog)
+    } else {
+        prog = "unknown"
+    }
+    print "tcp        *:" port "                 *:*                     LISTEN      " pid "/" prog
+}' /proc/net/tcp
+
+# For UDP connections
+awk '$1 == "udp" && $4 ~ /:([0-9]+)$/ {
+    split($4, local, ":")
+    port = strtonum("0x" local[2])
+    cmdline = "/proc/" $9 "/cmdline"
+    pid = $9
+    if (getline prog < cmdline) {
+        gsub(/\x0/, " ", prog)
+    } else {
+        prog = "unknown"
+    }
+    print "udp        *:" port "                 *:*                                 " pid "/" prog
+}' /proc/net/udp
