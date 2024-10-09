@@ -1,34 +1,41 @@
 #!/usr/bin/env bash
 # Displays listening TCP and UDP ports with the associated PID and program name
 
+# Function to convert hex to decimal
+hex_to_dec() {
+    echo $((16#$1))
+}
+
 # List listening TCP ports
 echo "Active Internet connections (only servers)"
 echo "Proto Local Address           Foreign Address         State       PID/Program name"
 
 # For TCP connections
-awk '$1 == "tcp" && $4 ~ /:([0-9]+)$/ && $6 == "0A" {
+awk '$1 == "tcp" && $4 ~ /:([0-9A-Fa-f]+)$/ && $6 == "0A" {
     split($4, local, ":")
-    port = strtonum("0x" local[2])
+    port_hex = local[2]
     cmdline = "/proc/" $9 "/cmdline"
     pid = $9
+    port_dec = system("echo $((16#" port_hex "))")
     if (getline prog < cmdline) {
         gsub(/\x0/, " ", prog)
     } else {
         prog = "unknown"
     }
-    print "tcp        *:" port "                 *:*                     LISTEN      " pid "/" prog
+    printf "tcp        *:%s                 *:*                     LISTEN      %s/%s\n", port_dec, pid, prog
 }' /proc/net/tcp
 
 # For UDP connections
-awk '$1 == "udp" && $4 ~ /:([0-9]+)$/ {
+awk '$1 == "udp" && $4 ~ /:([0-9A-Fa-f]+)$/ {
     split($4, local, ":")
-    port = strtonum("0x" local[2])
+    port_hex = local[2]
     cmdline = "/proc/" $9 "/cmdline"
     pid = $9
+    port_dec = system("echo $((16#" port_hex "))")
     if (getline prog < cmdline) {
         gsub(/\x0/, " ", prog)
     } else {
         prog = "unknown"
     }
-    print "udp        *:" port "                 *:*                                 " pid "/" prog
+    printf "udp        *:%s                 *:*                                 %s/%s\n", port_dec, pid, prog
 }' /proc/net/udp
